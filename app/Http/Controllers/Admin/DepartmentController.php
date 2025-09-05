@@ -42,6 +42,14 @@ class DepartmentController extends Controller
             ->with('success', 'Department created successfully');
     }
 
+    public function show(Department $department)
+    {
+        $this->authorize('department_view');
+
+        $department->load('location', 'users');
+        return view('departments.show', compact('department'));
+    }
+
     public function edit(Department $department)
     {
         $this->authorize('department_edit');

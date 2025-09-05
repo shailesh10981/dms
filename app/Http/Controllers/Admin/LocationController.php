@@ -46,6 +46,13 @@ class LocationController extends Controller
             ->with('success', 'Location created successfully');
     }
 
+    public function show(Location $location)
+    {
+        $this->authorize('location_view');
+
+        return view('locations.show', compact('location'));
+    }
+
     public function edit(Location $location)
     {
         $this->authorize('location_edit');
