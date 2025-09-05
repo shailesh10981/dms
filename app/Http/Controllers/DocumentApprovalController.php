@@ -56,14 +56,25 @@ class DocumentApprovalController extends Controller
         $approval->approved_at = now();
         $approval->save();
 
+        // Delete all previous versions upon final approval
+        $root = $document;
+        while ($root->parent) { $root = $root->parent; }
+        $previous = Document::where(function($q) use ($root) {
+                $q->where('parent_id', $root->id)->orWhere('id', $root->id);
+            })
+            ->where('id', '!=', $document->id)
+            ->get();
+        foreach ($previous as $old) {
+            \Illuminate\Support\Facades\Storage::delete($old->file_path);
+            $old->forceDelete();
+        }
+
         // Log the action
-        $document->logAction('approve', 'Document approved');
+        $document->logAction('approve', 'Document approved; previous versions purged');
         $document->uploader->notify(new DocumentApproved($document));
 
-        // TODO: Send notification to uploader
-
         return redirect()->route('approvals.index')
-            ->with('success', 'Document approved successfully!');
+            ->with('success', 'Document approved successfully and previous versions deleted!');
     }
 
     public function reject(Request $request, Document $document)
