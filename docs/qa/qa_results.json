@@ -1,0 +1,88 @@
+[
+    {
+        "name": "A1-A2-A3 Upload + storage + ID format",
+        "status": "PASS",
+        "evidence": {
+            "document_id": "FIN2025-09-08-983",
+            "file_path": "documents\/qa-sample-1757326097.pdf",
+            "existsOnDisk": true,
+            "idPatternOk": true
+        }
+    },
+    {
+        "name": "B5 Versioning - new version created",
+        "status": "PASS",
+        "evidence": {
+            "parent_id": 15,
+            "v2_id": 16,
+            "v2_doc_id": "FIN2025-09-08-20250908-0007"
+        }
+    },
+    {
+        "name": "C6 Submit with workflow",
+        "status": "PASS",
+        "evidence": {
+            "current_approver_id": 2,
+            "status": "submitted"
+        }
+    },
+    {
+        "name": "B5 Final approval purges prior versions",
+        "status": "PASS",
+        "evidence": {
+            "approved_status": "approved",
+            "old_parent_file_existed": true,
+            "old_parent_file_now_exists": false,
+            "old_parent_row_exists": false
+        }
+    },
+    {
+        "name": "D10-D11 Metadata + Audit log present",
+        "status": "PASS",
+        "evidence": {
+            "created_by": 4,
+            "created_date": "2025-09-08",
+            "recent_audit": [
+                "version_create",
+                "submit",
+                "approve"
+            ]
+        }
+    },
+    {
+        "name": "D12 Soft delete + restore",
+        "status": "PASS",
+        "evidence": {
+            "trashed_found": true,
+            "restored_exists": true
+        }
+    },
+    {
+        "name": "E13-E16 Risk submit + workflow",
+        "status": "PASS",
+        "evidence": {
+            "risk_id": "RSK-FIN-20250908-0005",
+            "status": "submitted",
+            "current_approver_id": 2
+        }
+    },
+    {
+        "name": "E17 Risk approve",
+        "status": "PASS",
+        "evidence": {
+            "status": "approved"
+        }
+    },
+    {
+        "name": "G20-G21 LDAP feature flags present",
+        "status": "PASS",
+        "evidence": {
+            "LDAP_ENABLED": false
+        }
+    },
+    {
+        "name": "H22 CSRF enabled",
+        "status": "PASS",
+        "evidence": []
+    }
+]

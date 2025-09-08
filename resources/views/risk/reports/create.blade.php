@@ -42,7 +42,10 @@
 
         <div class="mb-3">
           <label class="form-label">Approval Workflow (select approvers in order)</label>
-          <select name="approver_ids[]" class="form-select select2" multiple>
+          <select name="approver_ids[]" class="form-select select2" multiple data-placeholder="Select approvers in order">
+            @foreach($approvers as $u)
+              <option value="{{ $u->id }}">{{ $u->name }} @if($u->department) ({{ $u->department->code }}) @endif</option>
+            @endforeach
           </select>
           <small class="text-muted">HOD will be preselected if available; you can override order.</small>
         </div>
@@ -57,6 +60,7 @@
 @push('scripts')
 <script>
 const fieldsByType = @json($fieldsByType);
+const managersByDept = @json($managersByDept ?? []);
 const container = document.getElementById('dynamic-fields');
 document.getElementById('issue_type').addEventListener('change', function() {
   const type = this.value;
@@ -69,6 +73,27 @@ document.getElementById('issue_type').addEventListener('change', function() {
     container.appendChild(div);
   })
 });
+
+// Preselect HOD (manager) when department changes
+const deptSelect = document.querySelector('select[name="department_id"]');
+const approverSelect = $('select[name="approver_ids[]"]');
+if (deptSelect) {
+  deptSelect.addEventListener('change', function() {
+    const hodId = managersByDept[this.value];
+    if (hodId) {
+      let vals = approverSelect.val() || [];
+      if (!vals.includes(String(hodId))) {
+        vals.unshift(String(hodId));
+        approverSelect.val(vals).trigger('change');
+      }
+    }
+  });
+}
+// trigger preselect if department already chosen
+if (deptSelect && deptSelect.value) {
+  const event = new Event('change');
+  deptSelect.dispatchEvent(event);
+}
 </script>
 @endpush
 @endsection

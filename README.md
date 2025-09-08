@@ -1,66 +1,100 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DMS (Document Management + Risk Reporting)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 10 application implementing a DMS with versioning, configurable approval workflows, audit history, and a Risk Reporting module with multi‑step approvals.
 
-## About Laravel
+## Quick start (DB mode)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Prerequisites
+- PHP 8.1+
+- Composer
+- SQLite (recommended for quick start) or MySQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Setup
+1) Copy env and set DB
+```
+cp .env.example .env
+```
+Option A – SQLite (recommended for local):
+```
+sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+sed -i 's/^DB_DATABASE=.*/DB_DATABASE=$(pwd)\/database\/database.sqlite/' .env
+mkdir -p database && touch database/database.sqlite
+```
+Option B – MySQL: set DB_* in .env accordingly.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+2) Install dependencies
+```
+composer install --prefer-dist --no-interaction --ignore-platform-req=ext-ldap
+composer require doctrine/dbal:^3 --no-interaction
+```
+Note: ext-ldap is only required for LDAP mode. You can ignore it in local DB mode as shown above.
 
-## Learning Laravel
+3) App key, migrate, seed, storage link
+```
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+4) Run
+```
+php artisan serve
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Login (seeded)
+- Admin: admin@dms.com / password
+- Manager: manager@dms.com / password
+- Compliance Officer: compliance@dms.com / password
+- Users: finance1@dms.com, finance2@dms.com, hr1@dms.com, it1@dms.com, ops1@dms.com, auditor@dms.com / password
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Key features
 
-## Laravel Sponsors
+DMS
+- Upload with metadata (Department, Location, Project, Visibility, Expiry)
+- Approval Workflow: pick approvers in order (Select2); default HOD used if left empty
+- Versioning: re-uploads create a new working version; after final approval, previous versions are purged (DB rows and files)
+- Audit trail: actions (create/update/submit/approve/reject/download) recorded and visible on the document page
+- Trash and restore (soft delete)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Risk Reporting
+- Four issue types with dynamic fields (Operational, Compliance, Financial, Security)
+- Optional attachment
+- Workflow per submission; default HOD is preselected based on Department
+- Current approver can approve/reject; all transitions logged to RiskAuditLog
 
-### Premium Partners
+Dashboard
+- Quick actions (Upload Document / Create Risk)
+- Visibility cards (Private / Public / Publish) and counts
+- Pending approvals (documents/risks), recent items, status chips, and workflow order preview
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## LDAP (optional)
+To enable LDAP login (via ldaprecord‑laravel):
+```
+# .env
+LDAP_ENABLED=true
+LDAP_CONNECTION=default
+LDAP_HOST=ad.example.com
+LDAP_PORT=636
+LDAP_BASE_DN=dc=example,dc=com
+LDAP_USERNAME=cn=service_account,ou=users,dc=example,dc=com
+LDAP_PASSWORD=********
+LDAP_SSL=true
+LDAP_TLS=false
+LDAP_LOGGING=true
+LDAP_CACHE=false
+```
+Requirements
+- PHP ext-ldap on the server (remove the --ignore-platform-req=ext-ldap flag and ensure the extension is installed)
+- Groups → roles mapping configured in config/ldap.php (role_mapping)
 
-## Contributing
+## QA harness
+Run the end‑to‑end checks in DB mode without the browser:
+```
+php scripts/qa_runner.php
+cat docs/qa/qa_results.json
+```
+This uploads a sample document, creates a new version, routes it through approval, and exercises the risk submission and approval flow.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Notes
+- Document ID format is DEPTYYYY-MM-DD-NNN. Uniqueness is enforced; sequence is per‑day. Adjust generation in App\Models\Document@generateDocumentId if you require strict per‑department sequencing.
+- Mail notifications are stored in the database by default (see App\Notifications). Configure mail in .env to send emails.

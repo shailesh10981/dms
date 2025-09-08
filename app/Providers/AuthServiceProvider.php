@@ -9,6 +9,8 @@ use App\Models\ComplianceReport;
 use App\Policies\DocumentPolicy;
 use App\Policies\ComplianceTemplatePolicy;
 use App\Policies\ComplianceReportPolicy;
+use App\Models\RiskReport;
+use App\Policies\RiskReportPolicy;
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -24,7 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\DocumentAuditLog::class => \App\Policies\DocumentAuditLogPolicy::class,
         ComplianceTemplate::class => ComplianceTemplatePolicy::class,
         ComplianceReport::class => ComplianceReportPolicy::class,
-        //
+        RiskReport::class => RiskReportPolicy::class,
     ];
 
     /**
