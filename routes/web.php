@@ -17,6 +17,18 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified', 'department'])->group(function () {
+    Route::prefix('risk-reports')->name('risk.reports.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\RiskReportController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\RiskReportController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\RiskReportController::class, 'store'])->name('store');
+        Route::post('/{report}/submit', [\App\Http\Controllers\RiskReportController::class, 'submit'])->name('submit');
+        Route::post('/{report}/approve', [\App\Http\Controllers\RiskReportController::class, 'approve'])->name('approve');
+        Route::post('/{report}/reject', [\App\Http\Controllers\RiskReportController::class, 'reject'])->name('reject');
+        Route::get('/{report}', [\App\Http\Controllers\RiskReportController::class, 'show'])->name('show');
+        Route::get('/{report}/edit', [\App\Http\Controllers\RiskReportController::class, 'edit'])->name('edit');
+        Route::put('/{report}', [\App\Http\Controllers\RiskReportController::class, 'update'])->name('update');
+        Route::delete('/{report}', [\App\Http\Controllers\RiskReportController::class, 'destroy'])->name('destroy');
+    });
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -96,8 +108,6 @@ Route::middleware(['auth', 'verified', 'department'])->group(function () {
         // Reject report
         Route::post('/{report}/reject', [ComplianceReportController::class, 'reject'])->name('reject');
 
-        Route::get('/create/{template}', [ComplianceReportController::class, 'createFromTemplate'])
-            ->name('create-from-template'); // Changed from create-with-template
 
 
     });

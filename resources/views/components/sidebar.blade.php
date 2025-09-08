@@ -63,11 +63,11 @@
 
         <!-- Compliance Module Menu -->
         @canany(['template_manage', 'template_view', 'report_create', 'report_view'])
-        <li class="nav-item {{ request()->routeIs(['compliance.templates.*', 'compliance.reports.*']) ? 'menu-open' : '' }}">
-          <a href="#" class="nav-link {{ request()->routeIs(['compliance.templates.*', 'compliance.reports.*']) ? 'active' : '' }}">
+        <li class="nav-item {{ request()->routeIs(['compliance.templates.*', 'compliance.reports.*','risk.reports.*']) ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs(['compliance.templates.*', 'compliance.reports.*','risk.reports.*']) ? 'active' : '' }}">
             <i class="nav-icon fas fa-clipboard-check"></i>
             <p>
-              Compliance
+              Compliance & Risk
               <i class="right fas fa-angle-left"></i>
             </p>
           </a>
@@ -102,6 +102,31 @@
               </ul>
             </li>
             @endcanany
+
+            <!-- Risk Reports -->
+            <li class="nav-item {{ request()->routeIs('risk.reports.*') ? 'menu-open' : '' }}">
+              <a href="#" class="nav-link {{ request()->routeIs('risk.reports.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                <p>
+                  Risk Reports
+                  <i class="right fas fa-angle-left"></i>
+                </p>
+              </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="{{ route('risk.reports.index') }}" class="nav-link {{ request()->routeIs('risk.reports.index') ? 'active' : '' }}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>View Risks</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="{{ route('risk.reports.create') }}" class="nav-link {{ request()->routeIs('risk.reports.create') ? 'active' : '' }}">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Create Risk</p>
+                  </a>
+                </li>
+              </ul>
+            </li>
 
             <!-- Reports Section -->
             @canany(['report_create', 'report_view'])

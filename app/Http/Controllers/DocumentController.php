@@ -78,8 +78,9 @@ class DocumentController extends Controller
         $departments = Department::all();
         $locations = Location::all();
         $projects = Project::where('department_id', auth()->user()->department_id)->get();
+        $users = User::select('id','name')->where('department_id', auth()->user()->department_id)->get();
 
-        return view('documents.create', compact('departments', 'locations', 'projects'));
+        return view('documents.create', compact('departments', 'locations', 'projects', 'users'));
     }
 
     public function store(Request $request)
@@ -94,6 +95,9 @@ class DocumentController extends Controller
             'project_id' => 'nullable|exists:projects,id',
             'document' => 'required|file|max:10240', // 10MB max
             'expiry_date' => 'nullable|date|after:today',
+            'visibility' => 'required|in:Private,Public,Publish',
+            'approver_ids' => 'nullable|array',
+            'approver_ids.*' => 'exists:users,id',
         ]);
 
         // Handle file upload
@@ -116,6 +120,8 @@ class DocumentController extends Controller
             'file_type' => $file->getClientMimeType(),
             'file_size' => $file->getSize(),
             'expiry_date' => $validated['expiry_date'],
+            'visibility' => $validated['visibility'],
+            'workflow_definition' => $request->input('approver_ids', []),
         ]);
 
         return redirect()->route('documents.show', $document->id)
@@ -194,8 +200,9 @@ class DocumentController extends Controller
         $departments = Department::all();
         $locations = Location::all();
         $projects = Project::where('department_id', auth()->user()->department_id)->get();
+        $users = User::select('id','name')->where('department_id', auth()->user()->department_id)->get();
 
-        return view('documents.edit', compact('document', 'departments', 'locations', 'projects'));
+        return view('documents.edit', compact('document', 'departments', 'locations', 'projects', 'users'));
     }
 
     public function update(Request $request, Document $document)
@@ -221,7 +228,10 @@ class DocumentController extends Controller
             'project_id' => 'nullable|exists:projects,id',
             'document' => 'nullable|file|max:10240', // 10MB max
             'expiry_date' => 'nullable|date|after:today',
-        ]);
+            'visibility' => 'required|in:Private,Public,Publish',
+            'approver_ids' => 'nullable|array',
+            'approver_ids.*' => 'exists:users,id',
+        ];
 
         // Handle file update if new file is uploaded
         if ($request->hasFile('document')) {
@@ -245,6 +255,8 @@ class DocumentController extends Controller
         $document->location_id = $validated['location_id'];
         $document->project_id = $validated['project_id'];
         $document->expiry_date = $validated['expiry_date'];
+        $document->visibility = $validated['visibility'];
+        $document->workflow_definition = $request->input('approver_ids', []);
         $document->save();
 
         // Log the action
@@ -288,23 +300,30 @@ class DocumentController extends Controller
             ->where('department_id', $document->department_id)
             ->firstOrFail();
 
-        // Update document status
+        // Determine approver chain
+        $flow = is_array($document->workflow_definition) ? $document->workflow_definition : [];
+        $firstApproverId = $flow[0] ?? optional(User::role('manager')->where('department_id', $document->department_id)->first())->id;
+
         $document->update([
             'status' => 'submitted',
-            'current_approver_id' => $manager->id
+            'current_approver_id' => $firstApproverId
         ]);
 
-        // Create approval record
-        $document->approvals()->create([
-            'approver_id' => $manager->id,
-            'status' => 'pending'
-        ]);
+        // Create approval record for the current approver
+        if ($firstApproverId) {
+            $document->approvals()->create([
+                'approver_id' => $firstApproverId,
+                'status' => 'pending'
+            ]);
+        }
 
         // Log the action
         $document->logAction('submit', 'Document submitted for approval');
 
-        // Send notification
-        $manager->notify(new DocumentApprovalRequest($document));
+        // Notify current approver
+        if ($firstApproverId) {
+            User::find($firstApproverId)?->notify(new DocumentApprovalRequest($document));
+        }
 
         return redirect()->route('documents.show', $document->id)
             ->with('success', 'Document submitted for approval successfully!');

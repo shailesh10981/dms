@@ -28,11 +28,18 @@ class Document extends Model
         'version',
         'parent_id',
         'expiry_date',
-        'is_expiry_notified'
+        'is_expiry_notified',
+        'visibility',
+        'created_by',
+        'modified_by',
+        'created_date',
+        'modified_date',
+        'workflow_definition'
     ];
 
     protected $casts = [
         'expiry_date' => 'date',
+        'workflow_definition' => 'array',
     ];
 
     // In app/Models/Document.php
@@ -42,20 +49,21 @@ class Document extends Model
         parent::boot();
 
         static::creating(function ($document) {
-            // ✅ Only set department if missing
             if (!$document->department_id) {
-                $document->department_id = auth()->user()->department_id ?? 1;
+                $document->department_id = auth()->user()->department_id ?? null;
             }
-
-            // ✅ Only generate a document ID if it’s not already manually set
             if (!isset($document->document_id) || empty($document->document_id)) {
                 $document->document_id = $document->generateDocumentId();
             }
-
-            // ✅ Only set version if not manually passed
             if (empty($document->version)) {
                 $document->version = 1;
             }
+            $document->created_by = auth()->id();
+            $document->created_date = now()->toDateString();
+        });
+        static::updating(function ($document) {
+            $document->modified_by = auth()->id();
+            $document->modified_date = now()->toDateString();
         });
     }
 
@@ -99,25 +107,17 @@ class Document extends Model
             }
         }
 
-        // fallback for new documents (no parent)
-        $departmentCode = $this->department ? $this->department->code : 'N/A';
-        $locationCode = $this->location ? $this->location->code : 'GEN';
-        $date = now()->format('Ymd');
-
-        $sequence = Document::whereDate('created_at', today())
-            ->whereNull('parent_id')
-            ->count() + 1;
-
-        $documentId = "DOC-{$departmentCode}-{$locationCode}-{$date}-" . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-
-        // double-check uniqueness for root documents too
+        // New format: DEPTYYYY-MM-DD-NNN
+        $dept = $this->department ? $this->department->code : 'DEPT';
+        $date = now()->format('Y-m-d');
+        $seq = Document::whereDate('created_at', today())->count() + 1;
+        $id = $dept . $date . '-' . str_pad($seq, 3, '0', STR_PAD_LEFT);
         $i = 0;
-        while (Document::where('document_id', $documentId)->exists()) {
+        while (Document::where('document_id', $id)->exists()) {
             $i++;
-            $documentId = "DOC-{$departmentCode}-{$locationCode}-{$date}-" . str_pad($sequence + $i, 4, '0', STR_PAD_LEFT);
+            $id = $dept . $date . '-' . str_pad($seq + $i, 3, '0', STR_PAD_LEFT);
         }
-
-        return $documentId;
+        return $id;
     }
 
 
@@ -157,6 +157,11 @@ class Document extends Model
     public function versions()
     {
         return $this->hasMany(Document::class, 'parent_id');
+    }
+
+    public function workflowSteps()
+    {
+        return $this->hasMany(DocumentWorkflowStep::class);
     }
 
     public function approvals()

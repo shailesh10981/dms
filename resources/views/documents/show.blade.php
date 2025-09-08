@@ -31,6 +31,7 @@
               <p><strong>Department:</strong> {{ $document->department->name }}</p>
               <p><strong>Location:</strong> {{ $document->location ? $document->location->name : 'N/A' }}</p>
               <p><strong>Project:</strong> {{ $document->project ? $document->project->name : 'N/A' }}</p>
+              <p><strong>Visibility:</strong> {{ $document->visibility ?? 'Private' }}</p>
             </div>
             <div class="col-md-6">
               <p><strong>Uploaded By:</strong> {{ $document->uploader->name }}</p>
