@@ -57,7 +57,7 @@
     </div>
 
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Pending Approvals (Documents)</h3></div>
+      <div class="card-header d-flex justify-content-between align-items-center"><h3 class="card-title">Pending Approvals (Documents)</h3><span class="badge bg-primary">{{ $pendingDocApprovals->count() }}</span></div>
       <div class="card-body p-0">
         <ul class="list-group list-group-flush">
           @forelse($pendingDocApprovals as $ap)
@@ -78,7 +78,7 @@
 
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Pending Approvals (Risks)</h3></div>
+      <div class="card-header d-flex justify-content-between align-items-center"><h3 class="card-title">Pending Approvals (Risks)</h3><span class="badge bg-primary">{{ $pendingRisk->count() }}</span></div>
       <div class="card-body p-0">
         <ul class="list-group list-group-flush">
           @forelse($pendingRisk as $r)
@@ -104,7 +104,16 @@
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>
                 <strong>{{ $d->title }}</strong>
+                <span class="ms-2 badge bg-{{ $d->status == 'approved' ? 'success' : ($d->status == 'submitted' ? 'info' : ($d->status == 'rejected' ? 'danger' : 'warning')) }}">{{ ucfirst($d->status) }}</span>
                 <small class="text-muted d-block">{{ $d->department->name ?? '—' }} • {{ $d->created_at }}</small>
+                @if(is_array($d->workflow_definition) && count($d->workflow_definition))
+                  <small class="text-muted d-block">
+                    Workflow:
+                    @foreach($d->workflow_definition as $i => $uid)
+                      {{ optional(\App\Models\User::find($uid))->name ?? ('User #'.$uid) }}@if($i < count($d->workflow_definition)-1) → @endif
+                    @endforeach
+                  </small>
+                @endif
               </span>
               <a href="{{ route('documents.show', $d) }}" class="btn btn-sm btn-outline-secondary">Open</a>
             </li>

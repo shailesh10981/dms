@@ -78,7 +78,12 @@ class DocumentController extends Controller
         $departments = Department::all();
         $locations = Location::all();
         $projects = Project::where('department_id', auth()->user()->department_id)->get();
-        $users = User::select('id','name')->where('department_id', auth()->user()->department_id)->get();
+        $users = User::select('id','name','department_id')
+            ->with('department')
+            ->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['manager', 'compliance_officer', 'admin']);
+            })
+            ->get();
 
         return view('documents.create', compact('departments', 'locations', 'projects', 'users'));
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RiskReport;
 use App\Models\Department;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,9 +30,18 @@ class RiskReportController extends Controller
     public function create()
     {
         $departments = Department::pluck('name', 'id');
+        $approvers = User::select('id','name','department_id')
+            ->with('department')
+            ->whereHas('roles', function($q){
+                $q->whereIn('name', ['manager','compliance_officer','admin']);
+            })
+            ->get();
+        $managersByDept = User::role('manager')->pluck('id','department_id');
         return view('risk.reports.create', [
             'departments' => $departments,
             'fieldsByType' => $this->fieldsByType,
+            'approvers' => $approvers,
+            'managersByDept' => $managersByDept,
         ]);
     }
 
@@ -82,6 +92,22 @@ class RiskReportController extends Controller
                 'user_id' => $firstApproverId,
                 'status' => 'pending',
             ]);
+            $report->auditLogs()->create([
+                'user_id' => auth()->id(),
+                'action' => 'submit',
+                'comments' => 'Risk submitted for approval',
+                'metadata' => [
+                    'first_approver_id' => $firstApproverId,
+                    'workflow' => $flow,
+                ],
+            ]);
+        } else {
+            $report->auditLogs()->create([
+                'user_id' => auth()->id(),
+                'action' => 'create',
+                'comments' => 'Risk saved as draft',
+                'metadata' => [ 'issue_type' => $report->issue_type ],
+            ]);
         }
 
         return redirect()->route('risk.reports.show', $report)
@@ -114,6 +140,15 @@ class RiskReportController extends Controller
                 'status' => 'pending',
             ]);
         }
+        $report->auditLogs()->create([
+            'user_id' => auth()->id(),
+            'action' => 'submit',
+            'comments' => 'Risk submitted for approval',
+            'metadata' => [
+                'first_approver_id' => $firstApproverId,
+                'workflow' => $flow,
+            ],
+        ]);
         return back()->with('success', 'Risk submitted');
     }
 
@@ -149,6 +184,12 @@ class RiskReportController extends Controller
                 'user_id' => $nextApproverId,
                 'status' => 'pending',
             ]);
+            $report->auditLogs()->create([
+                'user_id' => auth()->id(),
+                'action' => 'step_approve',
+                'comments' => $request->comments,
+                'metadata' => [ 'next_approver_id' => $nextApproverId ],
+            ]);
             return back()->with('success', 'Step approved; moved to next approver');
         }
 
@@ -157,6 +198,11 @@ class RiskReportController extends Controller
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'current_approver_id' => null,
+        ]);
+        $report->auditLogs()->create([
+            'user_id' => auth()->id(),
+            'action' => 'approve',
+            'comments' => $request->comments,
         ]);
         return back()->with('success', 'Risk approved');
     }
@@ -179,6 +225,11 @@ class RiskReportController extends Controller
             'status' => 'rejected',
             'rejection_reason' => $request->rejection_reason,
             'current_approver_id' => null,
+        ]);
+        $report->auditLogs()->create([
+            'user_id' => auth()->id(),
+            'action' => 'reject',
+            'comments' => $request->rejection_reason,
         ]);
         return back()->with('success', 'Risk rejected');
     }

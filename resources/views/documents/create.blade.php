@@ -121,12 +121,14 @@
         <div class="form-group row">
           <label class="col-md-3 col-form-label">Approval Workflow</label>
           <div class="col-md-9">
-            <select class="form-control select2" name="approver_ids[]" multiple>
+            <select class="form-control select2" name="approver_ids[]" multiple data-placeholder="Select approvers in order">
               @foreach($users as $u)
-                <option value="{{ $u->id }}" {{ collect(old('approver_ids', []))->contains($u->id) ? 'selected' : '' }}>{{ $u->name }}</option>
+                <option value="{{ $u->id }}" {{ collect(old('approver_ids', []))->contains($u->id) ? 'selected' : '' }}>
+                  {{ $u->name }} @if($u->department) ({{ $u->department->code }}) @endif
+                </option>
               @endforeach
             </select>
-            <small class="text-muted">Select approvers in order. Default HOD will be used if left empty.</small>
+            <small class="text-muted">Selection order defines workflow order. Default HOD will be used if left empty.</small>
           </div>
         </div>
 
@@ -162,9 +164,6 @@
 @endsection
 
 @push('scripts')
-<script>
-  $('.select2').select2({theme:'bootstrap4', width:'100%'});
-</script>
 @endpush
 @section('scripts')
 <script>
