@@ -39,6 +39,7 @@ class Document extends Model
 
     protected $casts = [
         'expiry_date' => 'date',
+        'workflow_definition' => 'array',
     ];
 
     // In app/Models/Document.php

@@ -33,24 +33,24 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // First try LDAP authentication
-        $user = $this->ldapAuthService->authenticate(
-            $request->input('email'), // Can be username or email
-            $request->input('password')
-        );
+        // Try LDAP only if enabled, otherwise skip to DB auth
+        $user = null;
+        if (env('LDAP_ENABLED', false)) {
+            $user = $this->ldapAuthService->authenticate(
+                $request->input('email'), // Can be username or email
+                $request->input('password')
+            );
+        }
 
         if ($user) {
-            // LDAP authentication successful
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
-            
             return redirect()->intended(RouteServiceProvider::HOME);
         }
 
         // Fallback to standard Laravel authentication for non-LDAP users
         $request->authenticate();
         $request->session()->regenerate();
-
         return redirect()->intended(RouteServiceProvider::HOME);
     }
 

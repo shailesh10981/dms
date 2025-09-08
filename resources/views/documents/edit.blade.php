@@ -110,6 +110,34 @@
         </div>
 
         <div class="form-group row">
+          <label for="visibility" class="col-md-3 col-form-label">Visibility *</label>
+          <div class="col-md-9">
+            <select class="form-control @error('visibility') is-invalid @enderror" id="visibility" name="visibility" required>
+              @php($vis = old('visibility', $document->visibility ?? 'Private'))
+              <option value="Private" {{ $vis=='Private'?'selected':'' }}>Private</option>
+              <option value="Public" {{ $vis=='Public'?'selected':'' }}>Public</option>
+              <option value="Publish" {{ $vis=='Publish'?'selected':'' }}>Publish</option>
+            </select>
+            @error('visibility')
+            <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+            @enderror
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-md-3 col-form-label">Approval Workflow</label>
+          <div class="col-md-9">
+            @php($selected = collect(old('approver_ids', $document->workflow_definition ?? [])))
+            <select class="form-control select2" name="approver_ids[]" multiple>
+              @foreach($users as $u)
+                <option value="{{ $u->id }}" {{ $selected->contains($u->id) ? 'selected' : '' }}>{{ $u->name }}</option>
+              @endforeach
+            </select>
+            <small class="text-muted">Select approvers in order. Default HOD will be used if left empty.</small>
+          </div>
+        </div>
+
+        <div class="form-group row">
           <label for="document" class="col-md-3 col-form-label">Update File</label>
           <div class="col-md-9">
             <div class="custom-file">
@@ -141,6 +169,11 @@
 </div>
 @endsection
 
+@push('scripts')
+<script>
+  $('.select2').select2({theme:'bootstrap4', width:'100%'});
+</script>
+@endpush
 @section('scripts')
 <script>
   // Show the file name when a file is selected

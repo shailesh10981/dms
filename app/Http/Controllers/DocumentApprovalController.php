@@ -43,20 +43,41 @@ class DocumentApprovalController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Update document status
+        // Update approval record for current approver
+        $approval = $document->approvals()->where('status', 'pending')->first();
+        if ($approval) {
+            $approval->status = 'approved';
+            $approval->approved_at = now();
+            $approval->save();
+        }
+
+        $flow = is_array($document->workflow_definition) ? $document->workflow_definition : [];
+        $nextApproverId = null;
+        if (!empty($flow)) {
+            $idx = array_search(Auth::id(), $flow);
+            if ($idx !== false && $idx < count($flow) - 1) {
+                $nextApproverId = $flow[$idx + 1];
+            }
+        }
+
+        if ($nextApproverId) {
+            // Move to next approver
+            $document->status = 'submitted';
+            $document->current_approver_id = $nextApproverId;
+            $document->save();
+            $document->approvals()->create([
+                'approver_id' => $nextApproverId,
+                'status' => 'pending'
+            ]);
+            $document->logAction('approve', 'Step approved; moved to next approver');
+            optional(\App\Models\User::find($nextApproverId))->notify(new DocumentApproved($document));
+            return redirect()->route('approvals.index')
+                ->with('success', 'Approval recorded. Moved to next approver.');
+        }
+
+        // Final approval: set approved and purge previous versions
         $document->status = 'approved';
         $document->save();
-        Log::debug('After approval', [
-            'document_status' => $document->refresh()->status,
-            'approvals' => $document->refresh()->approvals->toArray()
-        ]);
-        // Update approval record
-        $approval = $document->approvals()->where('status', 'pending')->first();
-        $approval->status = 'approved';
-        $approval->approved_at = now();
-        $approval->save();
-
-        // Delete all previous versions upon final approval
         $root = $document;
         while ($root->parent) { $root = $root->parent; }
         $previous = Document::where(function($q) use ($root) {
@@ -68,13 +89,11 @@ class DocumentApprovalController extends Controller
             \Illuminate\Support\Facades\Storage::delete($old->file_path);
             $old->forceDelete();
         }
-
-        // Log the action
         $document->logAction('approve', 'Document approved; previous versions purged');
         $document->uploader->notify(new DocumentApproved($document));
 
         return redirect()->route('approvals.index')
-            ->with('success', 'Document approved successfully and previous versions deleted!');
+            ->with('success', 'Document approved and previous versions deleted!');
     }
 
     public function reject(Request $request, Document $document)
