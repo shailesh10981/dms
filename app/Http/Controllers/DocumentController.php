@@ -231,7 +231,7 @@ class DocumentController extends Controller
             'visibility' => 'required|in:Private,Public,Publish',
             'approver_ids' => 'nullable|array',
             'approver_ids.*' => 'exists:users,id',
-        ];
+        ]);
 
         // Handle file update if new file is uploaded
         if ($request->hasFile('document')) {
