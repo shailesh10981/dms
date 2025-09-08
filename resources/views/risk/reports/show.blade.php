@@ -24,10 +24,31 @@
       </dl>
 
       <h5>Workflow</h5>
-      <p>Defined at submission time.</p>
+      @php($flow = $report->workflow_definition ?? [])
+      @if(!empty($flow))
+        <ol>
+          @foreach($flow as $uid)
+            <li>{{ optional(\App\Models\User::find($uid))->name ?? 'User #'.$uid }} @if($report->current_approver_id==$uid) <span class="badge bg-info">Current</span>@endif</li>
+          @endforeach
+        </ol>
+      @else
+        <p class="text-muted">No approver chain defined.</p>
+      @endif
 
-      <h5>History</h5>
-      <p>Audit trail will appear here.</p>
+      @if($report->status=='submitted' && $report->current_approver_id==auth()->id())
+        <form method="POST" action="{{ route('risk.reports.approve', $report) }}" class="d-inline">
+          @csrf
+          <button type="submit" class="btn btn-success">Approve</button>
+        </form>
+        <form method="POST" action="{{ route('risk.reports.reject', $report) }}" class="d-inline ms-2">
+          @csrf
+          <input type="text" name="rejection_reason" class="form-control d-inline-block" style="width: 220px" placeholder="Reason" required>
+          <button type="submit" class="btn btn-danger">Reject</button>
+        </form>
+      @endif
+
+      <h5 class="mt-4">History</h5>
+      <p class="text-muted">Audit trail will appear here.</p>
     </div>
   </div>
 </div>

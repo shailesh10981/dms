@@ -10,7 +10,7 @@
       <table class="table table-striped">
         <thead>
           <tr>
-            <th>Risk ID</th><th>Title</th><th>Issue Type</th><th>Status</th><th>Department</th><th>Created</th><th></th>
+            <th>Risk ID</th><th>Title</th><th>Issue Type</th><th>Status</th><th>Department</th><th>Current Approver</th><th>Created</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -21,7 +21,8 @@
             <td>{{ ucfirst($r->issue_type) }}</td>
             <td>{{ ucfirst($r->status) }}</td>
             <td>{{ $r->department->name ?? '—' }}</td>
-            <td>{{ $r->created_at }}</td>
+            <td>{{ optional(\App\Models\User::find($r->current_approver_id))->name ?? '—' }}</td>
+            <td>{{ $r->created_at }}
             <td><a href="{{ route('risk.reports.show', $r) }}" class="btn btn-sm btn-outline-secondary">View</a></td>
           </tr>
           @endforeach

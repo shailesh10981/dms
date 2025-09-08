@@ -19,6 +19,7 @@ class RiskReport extends Model
         'title',
         'description',
         'status',
+        'current_approver_id',
         'data',
         'attachment_path',
         'submitted_at',
@@ -29,6 +30,7 @@ class RiskReport extends Model
 
     protected $casts = [
         'data' => 'array',
+        'workflow_definition' => 'array',
         'submitted_at' => 'date',
         'approved_at' => 'date',
     ];
